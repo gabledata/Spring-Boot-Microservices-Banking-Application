@@ -10,14 +10,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.training.user.service.config.KeyCloakManager;
 import org.training.user.service.model.entity.User;
+import org.training.user.service.model.entity.UserProfile;
 import org.training.user.service.service.KeycloakService;
 import org.training.user.service.utils.S3Uploader;
 import org.training.user.service.utils.WebClientFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -62,13 +68,32 @@ public class KeycloakServiceImpl implements KeycloakService {
     }
 
     /**
-     * Retrieves a list of user representations based on the provided authentication IDs.
+     * Retrieves a list of user representations based on the provided authentication
+     * IDs.
      *
-     * @param  authIds  a list of authentication IDs
-     * @return          a list of user representations
+     * @param authIds a list of authentication IDs
+     * @return a list of user representations
      */
     @Override
     public List<UserRepresentation> readUsers(List<String> authIds) {
+
+        try {
+            S3Client s3 = S3Client.builder()
+                    .region(Region.US_EAST_1)
+                    .credentialsProvider(ProfileCredentialsProvider.create())
+                    .build();
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                    .bucket("bucket-name")
+                    .key("key.json")
+                    .build();
+            ResponseInputStream<GetObjectResponse> s3Object = s3.getObject(getObjectRequest);
+            String jsonString = new String(s3Object.readAllBytes());
+            ObjectMapper objectMapper = new ObjectMapper();
+            UserProfile userProfile = objectMapper.readValue(jsonString, UserProfile.class);
+            S3Uploader.uploadContentsToFile(userProfile.toString(), "bucket-name", "newkey.json");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return authIds.stream().map(authId -> {
             UserResource usersResource = keyCloakManager.getKeyCloakInstanceWithRealm().users().get(authId);
