@@ -1,12 +1,9 @@
 package org.training.user.service.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.web.reactive.function.client.WebClient;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.nio.charset.StandardCharsets;
 
@@ -24,7 +21,8 @@ public class S3Uploader {
                     .key(key)
                     .contentType("application/json")
                     .build();
-            PutObjectResponse putObjectResponse = s3.putObject(
+                    
+            s3.putObject(
                     putObjectRequest,
                     software.amazon.awssdk.core.sync.RequestBody.fromString(contents, StandardCharsets.UTF_8)
             );

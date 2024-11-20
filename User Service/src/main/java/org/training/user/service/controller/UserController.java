@@ -1,6 +1,5 @@
 package org.training.user.service.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +20,6 @@ import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -45,7 +43,7 @@ public class UserController {
         WebClient client = WebClient.create("https://example.org");
         String id = "abc";
         Mono<ResponseEntity<User>> user = client.get()
-                .uri("/persons/{id}", id).accept(MediaType.APPLICATION_JSON)
+                .uri("/external-user/{id}", id).accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .toEntity(User.class);
         User newUser = transformUser(user.block().getBody());
@@ -56,14 +54,14 @@ public class UserController {
                     .region(Region.US_EAST_1)
                     .credentialsProvider(ProfileCredentialsProvider.create())
                     .build();
-            String bucketName = "your-s3-bucket-name";
+            String bucketName = "user-bucket";
             String key = "user-data/" + id + ".json";
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(key)
                     .contentType("application/json")
                     .build();
-            PutObjectResponse putObjectResponse = s3.putObject(
+            s3.putObject(
                     putObjectRequest,
                     software.amazon.awssdk.core.sync.RequestBody.fromString(userJson, StandardCharsets.UTF_8)
             );

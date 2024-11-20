@@ -1,6 +1,5 @@
 package org.training.user.service.service.implementation;
 
-import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -14,10 +13,6 @@ import org.training.user.service.service.KeycloakService;
 import org.training.user.service.utils.S3Uploader;
 import org.training.user.service.utils.WebClientFactory;
 import reactor.core.publisher.Mono;
-import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,11 +20,17 @@ import java.util.stream.Collectors;
 import static org.training.user.service.controller.UserController.transformUser;
 
 @Service
-@RequiredArgsConstructor
 public class KeycloakServiceImpl implements KeycloakService {
 
+    private final WebClient client;
     private final KeyCloakManager keyCloakManager;
 
+    public KeycloakServiceImpl(KeyCloakManager keyCloakManager) {
+        this.keyCloakManager = keyCloakManager;
+        this.client = WebClientFactory.createWebClient();
+    }
+
+    
     /**
      * Creates a new user in the KeyCloak system.
      *
@@ -50,8 +51,8 @@ public class KeycloakServiceImpl implements KeycloakService {
      */
     @Override
     public List<UserRepresentation> readUserByEmail(String emailId) {
-        WebClient client = WebClientFactory.createWebClient();
-        Mono<ResponseEntity<User>> user = client.get()
+        
+        Mono<ResponseEntity<User>> user = this.client.get()
                 .uri("/user/example").accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .toEntity(User.class);
